@@ -24,6 +24,7 @@ Start here if you are trying to understand or repair Moribund Flash.
 ## Architecture Notes
 
 - [Media Import System](./architecture/05-media-import-system.md)
+- [Plugin System](./architecture/09-plugin-system.md)
 
 ## Key Files
 

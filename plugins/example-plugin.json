@@ -1,0 +1,9 @@
+{
+  "id": "moribund.example",
+  "name": "Example Plugin",
+  "version": "0.1.0",
+  "target": "deck-builder",
+  "entry": "index.js",
+  "permissions": [],
+  "description": "Example plugin manifest. Not loaded by the app yet."
+}
