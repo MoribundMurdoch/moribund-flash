@@ -814,3 +814,13 @@ button {
   outline: 2px solid currentColor;
   outline-offset: 2px;
 }
+
+.builder-card-nav__drag-handle {
+  -webkit-user-drag: element;
+  touch-action: none;
+}
+
+.builder-card-nav__item[data-reorderable="false"] .builder-card-nav__drag-handle {
+  cursor: not-allowed;
+  opacity: 0.35;
+}

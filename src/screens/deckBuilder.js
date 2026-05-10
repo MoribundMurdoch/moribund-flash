@@ -516,11 +516,13 @@ function renderSidebar() {
             class="builder-card-nav__item ${index === builderState.activeIndex ? "is-active" : ""}"
             data-card-row
             data-index="${index}"
-            draggable="${!isSearching}"
+            data-reorderable="${!isSearching}"
           >
             <span
               class="builder-card-nav__drag-handle"
               data-card-drag-handle
+              data-index="${index}"
+              draggable="${!isSearching}"
               title="${isSearching ? "Clear search before reordering" : "Drag to reorder card"}"
               aria-hidden="true"
             >↕</span>
@@ -923,7 +925,7 @@ function bindGlobalEvents(app, goTo) {
     const handle = event.target.closest("[data-card-drag-handle]");
     const row = handle?.closest("[data-card-row]");
 
-    if (!row || row.getAttribute("draggable") !== "true") {
+    if (!handle || !row || row.dataset.reorderable !== "true") {
       event.preventDefault();
       return;
     }
@@ -937,7 +939,7 @@ function bindGlobalEvents(app, goTo) {
     if (!eventIsInsideDeckBuilder(event)) return;
 
     const row = event.target.closest("[data-card-row]");
-    if (!row || row.getAttribute("draggable") !== "true") return;
+    if (!row || row.dataset.reorderable !== "true") return;
 
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
@@ -963,7 +965,7 @@ function bindGlobalEvents(app, goTo) {
     if (!eventIsInsideDeckBuilder(event)) return;
 
     const row = event.target.closest("[data-card-row]");
-    if (!row || row.getAttribute("draggable") !== "true") return;
+    if (!row || row.dataset.reorderable !== "true") return;
 
     event.preventDefault();
 
