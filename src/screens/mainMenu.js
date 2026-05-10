@@ -2,10 +2,16 @@ import { playSound } from "../sound.js";
 
 const menuItems = [
   {
-    id: "deckList",
-    label: "Choose a deck...",
-    eyebrow: "Load an existing study deck",
-    status: "Open a local deck and begin studying.",
+    id: "studyDeck",
+    label: "Study a Deck...",
+    eyebrow: "Open a deck from your computer",
+    status: "Choose a deck file and begin studying.",
+  },
+  {
+    id: "deckLibrary",
+    label: "Deck Library",
+    eyebrow: "Browse saved study decks",
+    status: "View decks already known to Moribund Flash.",
   },
   {
     id: "deckBuilder",

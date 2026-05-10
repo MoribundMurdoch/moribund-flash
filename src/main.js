@@ -2,6 +2,7 @@ import { renderMainMenu } from "./screens/mainMenu.js";
 import { renderPlaceholder } from "./screens/placeholder.js";
 import { renderOptions } from "./screens/options/index.js";
 import { renderDeckList } from "./screens/deckList.js";
+import deckBuilderScreen from "./screens/deckBuilder.js";
 import { loadSound } from "./sound.js";
 
 // Load the sounds into memory right as the app starts
@@ -15,13 +16,17 @@ const app = document.querySelector("#app");
 const screens = {
   mainMenu: renderMainMenu,
   options: renderOptions,
-  deckList: renderDeckList,
 
-  deckBuilder: (app, context) =>
+  deckList: renderDeckList,
+  deckLibrary: renderDeckList,
+
+  studyDeck: (app, context) =>
     renderPlaceholder(app, context, {
-      title: "Deck Builder",
-      body: "A simple deck creation screen will live here.",
+      title: "Study a Deck",
+      body: "This will open a file picker and let you study a deck from anywhere on your computer.",
     }),
+
+  deckBuilder: (app, context) => deckBuilderScreen(app, context.goTo),
 
   controls: (app, context) =>
     renderPlaceholder(app, context, {
