@@ -238,32 +238,52 @@ function goNextCard() {
   saveDraft();
 }
 
-function builderStateToDeck() {
+function mediaFromPath(path) {
+  const trimmed = String(path || "").trim();
+
+  if (!trimmed) return null;
+
   return {
-    id: null,
-    name: deckName(),
-    description: builderState.tagsText.trim(),
-    format: "mflash",
-    metadata: {
-      deckTags: splitCommaList(builderState.tagsText),
-      coverMedia: builderState.mediaPath.trim() || null,
-      source: "deck-builder",
+    type: "file",
+    path: trimmed,
+    alt: "",
+  };
+}
+
+function builderStateToDeck() {
+  const title = deckName();
+  const deckTags = splitCommaList(builderState.tagsText);
+
+  return {
+    schema_version: 1,
+    deck: {
+      id: title
+        .toLowerCase()
+        .replaceAll(/[^a-z0-9]+/g, "_")
+        .replaceAll(/^_+|_+$/g, "") || "new_deck",
+      title,
+      description: "",
+      tags: deckTags,
+      media: mediaFromPath(builderState.mediaPath),
+      notes: "",
+      source_id: "deck-builder",
+      extra_fields: {},
     },
     cards: builderState.cards
       .filter((card) => card.term.trim() || card.definition.trim())
       .map((card, index) => ({
         id: card.id || `card-${index + 1}`,
-        front: card.term.trim(),
-        back: card.definition.trim(),
-        hint: "",
+        term: card.term.trim(),
+        definition: card.definition.trim(),
+        term_language: card.termLang.trim(),
+        definition_language: card.defLang.trim(),
+        example_sentences: splitLines(card.examplesText),
         tags: splitCommaList(card.tagsText),
-        metadata: {
-          termLang: card.termLang.trim() || null,
-          defLang: card.defLang.trim() || null,
-          hyperlink: card.hyperlink.trim() || null,
-          mediaPath: card.mediaPath.trim() || null,
-          examples: splitLines(card.examplesText),
-        },
+        media: mediaFromPath(card.mediaPath),
+        hyperlink: card.hyperlink.trim() || null,
+        notes: "",
+        source_id: null,
+        extra_fields: {},
       })),
   };
 }
@@ -283,7 +303,7 @@ async function saveBuilderDeck({ exitAfterSave = false } = {}) {
   try {
     await saveDeck(deck);
 
-    builderState.status = `Saved "${deck.name}".`;
+    builderState.status = `Saved "${deck.deck.title}".`;
     builderState.error = "";
 
     if (exitAfterSave) {

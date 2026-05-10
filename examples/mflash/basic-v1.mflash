@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "deck": {
+    "id": "basic-vocabulary",
+    "title": "Basic Vocabulary",
+    "description": "A tiny Moribund Flash v1 example deck.",
+    "tags": ["example", "vocabulary"],
+    "media": null,
+    "notes": "Minimal example for testing .mflash v1.",
+    "source_id": "manual-example",
+    "extra_fields": {}
+  },
+  "cards": [
+    {
+      "id": "card-001",
+      "term": "malarkey",
+      "definition": "humbug; nonsense",
+      "term_language": "English",
+      "definition_language": "English",
+      "example_sentences": [
+        "That explanation is pure malarkey."
+      ],
+      "tags": ["noun", "informal"],
+      "media": null,
+      "hyperlink": null,
+      "notes": "",
+      "source_id": null,
+      "extra_fields": {}
+    },
+    {
+      "id": "card-002",
+      "term": "salve",
+      "definition": "hello",
+      "term_language": "Latin",
+      "definition_language": "English",
+      "example_sentences": [
+        "Salve, amice."
+      ],
+      "tags": ["greeting", "latin"],
+      "media": null,
+      "hyperlink": null,
+      "notes": "Simple Latin greeting.",
+      "source_id": null,
+      "extra_fields": {}
+    }
+  ]
+}

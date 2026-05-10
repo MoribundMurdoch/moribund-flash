@@ -225,11 +225,16 @@ function normalizeDeckSummary(raw) {
 }
 
 /**
- * Converts a full backend deck into a predictable frontend object.
+ * Converts a full backend deck or .mflash v1 document into a predictable
+ * frontend object.
  */
 function normalizeDeck(raw) {
   if (!raw || typeof raw !== "object") {
     throw new Error("[normalizeDeck] Invalid deck.");
+  }
+
+  if (raw.schema_version === 1 && isPlainObject(raw.deck)) {
+    return normalizeMflashV1(raw);
   }
 
   const cards = Array.isArray(raw.cards) ? raw.cards : [];
@@ -244,6 +249,32 @@ function normalizeDeck(raw) {
     createdAt: stringOrNull(raw.created_at ?? raw.createdAt),
     modifiedAt: stringOrNull(raw.modified_at ?? raw.modifiedAt),
     metadata: isPlainObject(raw.metadata) ? raw.metadata : {},
+  };
+}
+
+function normalizeMflashV1(raw) {
+  const deck = raw.deck;
+  const cards = Array.isArray(raw.cards) ? raw.cards : [];
+
+  return {
+    id: stringOrNull(deck.id),
+    name: stringOrFallback(deck.title, "Untitled Deck"),
+    description: stringOrFallback(deck.description, ""),
+    path: stringOrNull(raw.path),
+    format: "mflash",
+    cards: cards.map(normalizeCard),
+    createdAt: stringOrNull(raw.created_at ?? raw.createdAt),
+    modifiedAt: stringOrNull(raw.modified_at ?? raw.modifiedAt),
+    metadata: {
+      schema_version: 1,
+      tags: Array.isArray(deck.tags)
+        ? deck.tags.filter((tag) => typeof tag === "string")
+        : [],
+      media: isPlainObject(deck.media) ? deck.media : null,
+      notes: stringOrFallback(deck.notes, ""),
+      source_id: stringOrNull(deck.source_id),
+      extra_fields: isPlainObject(deck.extra_fields) ? deck.extra_fields : {},
+    },
   };
 }
 
@@ -293,6 +324,10 @@ function normalizeCard(raw, index) {
  * Sanitizes a deck before sending it to Rust.
  */
 function normalizeDeckForSave(deck) {
+  if (deck?.schema_version === 1 && isPlainObject(deck.deck)) {
+    return normalizeMflashV1ForSave(deck);
+  }
+
   const normalized = normalizeDeck(deck);
 
   return {
@@ -310,6 +345,45 @@ function normalizeDeckForSave(deck) {
       metadata: card.metadata,
     })),
     metadata: normalized.metadata,
+  };
+}
+
+function normalizeMflashV1ForSave(raw) {
+  const deck = raw.deck;
+  const cards = Array.isArray(raw.cards) ? raw.cards : [];
+
+  return {
+    schema_version: 1,
+    deck: {
+      id: stringOrFallback(deck.id, "new_deck"),
+      title: stringOrFallback(deck.title, "Untitled Deck"),
+      description: stringOrFallback(deck.description, ""),
+      tags: Array.isArray(deck.tags)
+        ? deck.tags.filter((tag) => typeof tag === "string")
+        : [],
+      media: isPlainObject(deck.media) ? deck.media : null,
+      notes: stringOrFallback(deck.notes, ""),
+      source_id: stringOrNull(deck.source_id),
+      extra_fields: isPlainObject(deck.extra_fields) ? deck.extra_fields : {},
+    },
+    cards: cards.map((card, index) => ({
+      id: stringOrFallback(card.id, `card-${index + 1}`),
+      term: stringOrFallback(card.term, ""),
+      definition: stringOrFallback(card.definition, ""),
+      term_language: stringOrFallback(card.term_language, ""),
+      definition_language: stringOrFallback(card.definition_language, ""),
+      example_sentences: Array.isArray(card.example_sentences)
+        ? card.example_sentences.filter((example) => typeof example === "string")
+        : [],
+      tags: Array.isArray(card.tags)
+        ? card.tags.filter((tag) => typeof tag === "string")
+        : [],
+      media: isPlainObject(card.media) ? card.media : null,
+      hyperlink: stringOrNull(card.hyperlink),
+      notes: stringOrFallback(card.notes, ""),
+      source_id: stringOrNull(card.source_id),
+      extra_fields: isPlainObject(card.extra_fields) ? card.extra_fields : {},
+    })),
   };
 }
 

@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "deck": {
+    "id": "media-example",
+    "title": "Media Example",
+    "description": "Example deck showing singular media fields for v1.",
+    "tags": ["example", "media"],
+    "media": {
+      "type": "file",
+      "path": "./media/deck-cover.png",
+      "alt": "Example deck cover image"
+    },
+    "notes": "Media is singular in v1. One media object or null.",
+    "source_id": "manual-example",
+    "extra_fields": {
+      "difficulty": "demo"
+    }
+  },
+  "cards": [
+    {
+      "id": "card-001",
+      "term": "chiropterophilous",
+      "definition": "pollinated by bats",
+      "term_language": "English",
+      "definition_language": "English",
+      "example_sentences": [
+        "The plant is chiropterophilous, relying on bats for pollination."
+      ],
+      "tags": ["biology", "pollination"],
+      "media": {
+        "type": "file",
+        "path": "./media/bat-flower.png",
+        "alt": "A bat near a flower"
+      },
+      "hyperlink": null,
+      "notes": "Example card with media.",
+      "source_id": null,
+      "extra_fields": {}
+    }
+  ]
+}
