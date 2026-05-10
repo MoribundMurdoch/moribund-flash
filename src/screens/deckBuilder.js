@@ -337,6 +337,49 @@ function removeActiveCard() {
   saveDraft();
 }
 
+function removeCardAtIndex(index) {
+  const safeIndex = clampIndex(index, builderState.cards.length);
+
+  if (builderState.cards.length <= 1) {
+    builderState.cards = [emptyCard()];
+    builderState.activeIndex = 0;
+  } else {
+    builderState.cards.splice(safeIndex, 1);
+
+    if (builderState.activeIndex >= builderState.cards.length) {
+      builderState.activeIndex = builderState.cards.length - 1;
+    } else if (builderState.activeIndex > safeIndex) {
+      builderState.activeIndex -= 1;
+    }
+  }
+
+  builderState.status = "Card removed.";
+  builderState.error = "";
+  saveDraft();
+}
+
+function moveCard(fromIndex, toIndex) {
+  const from = clampIndex(fromIndex, builderState.cards.length);
+  const to = clampIndex(toIndex, builderState.cards.length);
+
+  if (from === to) return;
+
+  const [card] = builderState.cards.splice(from, 1);
+  builderState.cards.splice(to, 0, card);
+
+  if (builderState.activeIndex === from) {
+    builderState.activeIndex = to;
+  } else if (from < builderState.activeIndex && to >= builderState.activeIndex) {
+    builderState.activeIndex -= 1;
+  } else if (from > builderState.activeIndex && to <= builderState.activeIndex) {
+    builderState.activeIndex += 1;
+  }
+
+  builderState.status = "Card reordered.";
+  builderState.error = "";
+  saveDraft();
+}
+
 function goPreviousCard() {
   builderState.activeIndex = clampIndex(
     builderState.activeIndex - 1,
@@ -438,6 +481,7 @@ async function saveBuilderDeck({ exitAfterSave = false } = {}) {
 
 function renderSidebar() {
   const rows = filteredCards();
+  const isSearching = builderState.searchText.trim().length > 0;
 
   return `
     <aside class="builder-sidebar" aria-label="Deck structure">
@@ -458,23 +502,51 @@ function renderSidebar() {
             data-deck-field="searchText"
           >
         </label>
+
+        ${isSearching ? `
+          <small class="builder-search-note">
+            Reordering is disabled while search is active.
+          </small>
+        ` : ""}
       </div>
 
       <div class="builder-card-nav">
         ${rows.map(({ card, index }) => `
-          <button
-            type="button"
+          <article
             class="builder-card-nav__item ${index === builderState.activeIndex ? "is-active" : ""}"
-            data-action="select-card"
+            data-card-row
             data-index="${index}"
+            draggable="${!isSearching}"
           >
-            <span class="builder-card-nav__number">${index + 1}</span>
-            <span class="builder-card-nav__text">
-              <span>${escapeHtml(cardTitle(card, index))}</span>
-              <small>${escapeHtml(cardSubtitle(card))}</small>
-            </span>
-            <span class="builder-card-nav__dots">⋮</span>
-          </button>
+            <span
+              class="builder-card-nav__drag-handle"
+              data-card-drag-handle
+              title="${isSearching ? "Clear search before reordering" : "Drag to reorder card"}"
+              aria-hidden="true"
+            >↕</span>
+
+            <button
+              type="button"
+              class="builder-card-nav__select"
+              data-action="select-card"
+              data-index="${index}"
+            >
+              <span class="builder-card-nav__number">${index + 1}</span>
+              <span class="builder-card-nav__text">
+                <span>${escapeHtml(cardTitle(card, index))}</span>
+                <small>${escapeHtml(cardSubtitle(card))}</small>
+              </span>
+            </button>
+
+            <button
+              type="button"
+              class="builder-card-nav__delete"
+              data-action="delete-card"
+              data-index="${index}"
+              title="Delete card"
+              aria-label="Delete card ${index + 1}"
+            >×</button>
+          </article>
         `).join("")}
       </div>
     </aside>
@@ -672,52 +744,21 @@ function renderActiveCardEditor() {
   `;
 }
 
-function render(app, goTo) {
-  app.innerHTML = `
-    <section class="deck-builder-v2">
-      <header class="builder-topbar">
-        <div class="builder-brand">
-          <span class="builder-logo">MF</span>
-          <span>Moribund Flash</span>
-        </div>
+let globalEventsBound = false;
 
-        <h1>Deck Builder</h1>
+function eventIsInsideDeckBuilder(event) {
+  return Boolean(event.target.closest(".deck-builder-v2"));
+}
 
-        <div class="builder-topbar__actions">
-          <button type="button" class="builder-button" data-action="import-file">
-            Import from file...
-          </button>
-          <button type="button" class="builder-button" data-action="save-draft">
-            Save Draft
-          </button>
-          <button type="button" class="builder-button builder-button--accent" data-action="save-deck">
-            Save Deck
-          </button>
-          <button type="button" class="builder-button" data-action="exit">
-            Exit
-          </button>
-        </div>
-      </header>
+function isTypingInField() {
+  const activeTag = document.activeElement?.tagName?.toLowerCase() || "";
+  return activeTag === "input" || activeTag === "textarea" || activeTag === "select";
+}
 
-      <div class="builder-shell">
-        ${renderSidebar()}
-
-        <main class="builder-main">
-          ${builderState.status ? `<p class="builder-notice">${escapeHtml(builderState.status)}</p>` : ""}
-          ${builderState.error ? `<p class="builder-notice builder-notice--error">${escapeHtml(builderState.error)}</p>` : ""}
-
-          ${renderMetadata()}
-          ${renderActiveCardEditor()}
-
-          <p class="builder-shortcuts">
-            Shortcuts: Ctrl+N New Card · Ctrl+D Duplicate · Delete Remove
-          </p>
-        </main>
-      </div>
-    </section>
-  `;
-
+function bindGlobalEvents(app, goTo) {
   app.addEventListener("input", (event) => {
+    if (!eventIsInsideDeckBuilder(event)) return;
+
     const target = event.target;
 
     if (target.dataset.deckField) {
@@ -733,41 +774,33 @@ function render(app, goTo) {
     }
   });
 
-  app.querySelectorAll("[data-media-drop]").forEach((zone) => {
-    zone.addEventListener("dragover", (event) => {
-      preventMediaDragDefault(event);
-      zone.classList.add("is-drag-over");
-    });
-
-    zone.addEventListener("dragleave", () => {
-      zone.classList.remove("is-drag-over");
-    });
-
-    zone.addEventListener("drop", async (event) => {
-      zone.classList.remove("is-drag-over");
-      await handleMediaDrop(event, zone.dataset.mediaDrop);
-      render(app, goTo);
-    });
-  });
-
-  app.querySelectorAll("[data-media-picker]").forEach((picker) => {
-    picker.addEventListener("change", async (event) => {
-      const file = event.target.files?.[0];
-      await attachMediaFile(file, picker.dataset.mediaPicker);
-      render(app, goTo);
-    });
-  });
-
   app.addEventListener("click", async (event) => {
-    const button = event.target.closest("[data-action]");
-    if (!button) return;
+    if (!eventIsInsideDeckBuilder(event)) return;
 
-    const action = button.dataset.action;
+    const actionElement = event.target.closest("[data-action]");
+    if (!actionElement) return;
+
+    const action = actionElement.dataset.action;
 
     if (action === "select-card") {
-      builderState.activeIndex = clampIndex(button.dataset.index, builderState.cards.length);
+      builderState.activeIndex = clampIndex(
+        actionElement.dataset.index,
+        builderState.cards.length
+      );
       saveDraft();
       render(app, goTo);
+      return;
+    }
+
+    if (action === "delete-card") {
+      const index = Number(actionElement.dataset.index);
+      const card = builderState.cards[index];
+      const title = card ? cardTitle(card, index) : `card ${index + 1}`;
+
+      if (confirm(`Delete "${title}"?`)) {
+        removeCardAtIndex(index);
+        render(app, goTo);
+      }
       return;
     }
 
@@ -840,24 +873,188 @@ function render(app, goTo) {
   });
 
   app.addEventListener("keydown", async (event) => {
-    if (event.ctrlKey && event.key.toLowerCase() === "n") {
+    if (!app.querySelector(".deck-builder-v2")) return;
+
+    const isTyping = isTypingInField();
+    const key = event.key;
+
+    if (event.ctrlKey && key.toLowerCase() === "n") {
       event.preventDefault();
       addCard();
       render(app, goTo);
+      return;
     }
 
-    if (event.ctrlKey && event.key.toLowerCase() === "d") {
+    if (event.ctrlKey && key.toLowerCase() === "d") {
       event.preventDefault();
       duplicateActiveCard();
       render(app, goTo);
+      return;
     }
 
-    if (event.key === "Delete" && document.activeElement === document.body) {
+    if (key === "Delete" && !isTyping) {
       event.preventDefault();
       removeActiveCard();
       render(app, goTo);
+      return;
+    }
+
+    const isPreviousKey = key === "ArrowLeft" || key === "ArrowUp";
+    const isNextKey = key === "ArrowRight" || key === "ArrowDown";
+    const canNavigate = !isTyping || event.altKey;
+
+    if (isPreviousKey && canNavigate) {
+      event.preventDefault();
+      goPreviousCard();
+      render(app, goTo);
+      return;
+    }
+
+    if (isNextKey && canNavigate) {
+      event.preventDefault();
+      goNextCard();
+      render(app, goTo);
     }
   });
+
+  app.addEventListener("dragstart", (event) => {
+    if (!eventIsInsideDeckBuilder(event)) return;
+
+    const handle = event.target.closest("[data-card-drag-handle]");
+    const row = handle?.closest("[data-card-row]");
+
+    if (!row || row.getAttribute("draggable") !== "true") {
+      event.preventDefault();
+      return;
+    }
+
+    event.dataTransfer.setData("text/plain", row.dataset.index);
+    event.dataTransfer.effectAllowed = "move";
+    row.classList.add("is-dragging");
+  });
+
+  app.addEventListener("dragover", (event) => {
+    if (!eventIsInsideDeckBuilder(event)) return;
+
+    const row = event.target.closest("[data-card-row]");
+    if (!row || row.getAttribute("draggable") !== "true") return;
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    row.classList.add("is-drag-over-card");
+  });
+
+  app.addEventListener("dragleave", (event) => {
+    const row = event.target.closest("[data-card-row]");
+    if (row) row.classList.remove("is-drag-over-card");
+  });
+
+  app.addEventListener("dragend", () => {
+    app.querySelectorAll(".is-dragging").forEach((row) => {
+      row.classList.remove("is-dragging");
+    });
+
+    app.querySelectorAll(".is-drag-over-card").forEach((row) => {
+      row.classList.remove("is-drag-over-card");
+    });
+  });
+
+  app.addEventListener("drop", (event) => {
+    if (!eventIsInsideDeckBuilder(event)) return;
+
+    const row = event.target.closest("[data-card-row]");
+    if (!row || row.getAttribute("draggable") !== "true") return;
+
+    event.preventDefault();
+
+    const fromIndex = Number(event.dataTransfer.getData("text/plain"));
+    const toIndex = Number(row.dataset.index);
+
+    if (Number.isInteger(fromIndex) && Number.isInteger(toIndex)) {
+      moveCard(fromIndex, toIndex);
+      render(app, goTo);
+    }
+  });
+}
+
+function bindLocalMediaEvents(app, goTo) {
+  app.querySelectorAll("[data-media-drop]").forEach((zone) => {
+    zone.addEventListener("dragover", (event) => {
+      preventMediaDragDefault(event);
+      zone.classList.add("is-drag-over");
+    });
+
+    zone.addEventListener("dragleave", () => {
+      zone.classList.remove("is-drag-over");
+    });
+
+    zone.addEventListener("drop", async (event) => {
+      zone.classList.remove("is-drag-over");
+      await handleMediaDrop(event, zone.dataset.mediaDrop);
+      render(app, goTo);
+    });
+  });
+
+  app.querySelectorAll("[data-media-picker]").forEach((picker) => {
+    picker.addEventListener("change", async (event) => {
+      const file = event.target.files?.[0];
+      await attachMediaFile(file, picker.dataset.mediaPicker);
+      render(app, goTo);
+    });
+  });
+}
+
+function render(app, goTo) {
+  app.innerHTML = `
+    <section class="deck-builder-v2">
+      <header class="builder-topbar">
+        <div class="builder-brand">
+          <span class="builder-logo">MF</span>
+          <span>Moribund Flash</span>
+        </div>
+
+        <h1>Deck Builder</h1>
+
+        <div class="builder-topbar__actions">
+          <button type="button" class="builder-button" data-action="import-file">
+            Import from file...
+          </button>
+          <button type="button" class="builder-button" data-action="save-draft">
+            Save Draft
+          </button>
+          <button type="button" class="builder-button builder-button--accent" data-action="save-deck">
+            Save Deck
+          </button>
+          <button type="button" class="builder-button" data-action="exit">
+            Exit
+          </button>
+        </div>
+      </header>
+
+      <div class="builder-shell">
+        ${renderSidebar()}
+
+        <main class="builder-main">
+          ${builderState.status ? `<p class="builder-notice">${escapeHtml(builderState.status)}</p>` : ""}
+          ${builderState.error ? `<p class="builder-notice builder-notice--error">${escapeHtml(builderState.error)}</p>` : ""}
+
+          ${renderMetadata()}
+          ${renderActiveCardEditor()}
+
+          <p class="builder-shortcuts">
+            Shortcuts: Ctrl+N New Card · Ctrl+D Duplicate · Delete Remove · Arrow Keys Navigate · Alt+Arrow while typing
+          </p>
+        </main>
+      </div>
+    </section>
+  `;
+
+  if (!globalEventsBound) {
+    bindGlobalEvents(app, goTo);
+    globalEventsBound = true;
+  }
+
+  bindLocalMediaEvents(app, goTo);
 }
 
 export function deckBuilderScreen(app, goTo) {

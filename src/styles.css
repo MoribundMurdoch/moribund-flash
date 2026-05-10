@@ -747,3 +747,70 @@ button {
 .builder-media-picker {
   display: none;
 }
+
+/* Deck Builder sidebar reordering */
+
+.builder-search-note {
+  display: block;
+  opacity: 0.7;
+  margin-top: 6px;
+}
+
+.builder-card-nav__item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.builder-card-nav__item.is-dragging {
+  opacity: 0.55;
+}
+
+.builder-card-nav__item.is-drag-over-card {
+  outline: 2px solid currentColor;
+  outline-offset: -2px;
+}
+
+.builder-card-nav__drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  cursor: grab;
+  opacity: 0.75;
+  user-select: none;
+}
+
+.builder-card-nav__drag-handle:active {
+  cursor: grabbing;
+}
+
+.builder-card-nav__select {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  padding: 0;
+  cursor: pointer;
+}
+
+.builder-card-nav__delete {
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  min-width: 28px;
+  cursor: pointer;
+}
+
+.builder-card-nav__delete:hover,
+.builder-card-nav__delete:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
