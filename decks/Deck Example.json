@@ -1,0 +1,136 @@
+{
+  "name": "Deck Example",
+  "description": null,
+  "cards": [
+    {
+      "id": 1,
+      "term": "Diversiloquent",
+      "definition": "talking about many things"
+    },
+    {
+      "id": 2,
+      "term": "Stultiloquent",
+      "definition": "a person who babbles idiotically"
+    },
+    {
+      "id": 3,
+      "term": "Fulmination",
+      "definition": "a loud violent explosion either a literal one [such as the detonation of a bomb] or a figurative one (a vehement denunciation)"
+    },
+    {
+      "id": 4,
+      "term": "Chudduck",
+      "definition": "the sound of a car running over a pot-hole"
+    },
+    {
+      "id": 5,
+      "term": "Wheeple",
+      "definition": "a poor attempt to whistle loudly"
+    },
+    {
+      "id": 6,
+      "term": "Week",
+      "definition": "the squeal of a frightened pig or the squeak of a frightened mouse"
+    },
+    {
+      "id": 7,
+      "term": "Fremescence",
+      "definition": "in a crowd or mob, the murmuring or grumbling sound of rising dissatisfaction or indignation"
+    },
+    {
+      "id": 8,
+      "term": "Tirra",
+      "definition": "Lirra - the repetitive, melodic sound made by a soundbird"
+    },
+    {
+      "id": 9,
+      "term": "Haingle",
+      "definition": "amble about in a feeble or listless way"
+    },
+    {
+      "id": 10,
+      "term": "Dwale",
+      "definition": "to wander about deliriously"
+    },
+    {
+      "id": 11,
+      "term": "Charrette",
+      "definition": "an intensive, eleventh-hour effort to complete or accomplish something before a deadline"
+    },
+    {
+      "id": 12,
+      "term": "Collifobble",
+      "definition": "to talk secretly"
+    },
+    {
+      "id": 13,
+      "term": "Eggtaggle",
+      "definition": "to waste time in bad company"
+    },
+    {
+      "id": 14,
+      "term": "Funkify",
+      "definition": "to run away in fright"
+    },
+    {
+      "id": 15,
+      "term": "Forslug",
+      "definition": "to forfeit or ruin by sluggishness or indolence"
+    },
+    {
+      "id": 16,
+      "term": "Sportulary",
+      "definition": "subsisting on handouts"
+    },
+    {
+      "id": 17,
+      "term": "Omnierudite",
+      "definition": "universally learnt, educated in all things"
+    },
+    {
+      "id": 18,
+      "term": "Eudemonics",
+      "definition": "study or science of happiness"
+    },
+    {
+      "id": 19,
+      "term": "Momiology",
+      "definition": "study of mummies"
+    },
+    {
+      "id": 20,
+      "term": "Casuist",
+      "definition": "a fiendishly subtle & dishonest sophist who specializes in splitting the thinnest of intellectual hairs"
+    },
+    {
+      "id": 21,
+      "term": "Couther",
+      "definition": "to comfort by giving refreshment & warmth; to cure by administering remedies"
+    },
+    {
+      "id": 22,
+      "term": "Festinate",
+      "definition": "to walk fast, move forward rapidly"
+    },
+    {
+      "id": 23,
+      "term": "Diurnation",
+      "definition": "sleeping during the day"
+    },
+    {
+      "id": 24,
+      "term": "Glink",
+      "definition": "to glance at slyly or sideways"
+    },
+    {
+      "id": 25,
+      "term": "Periclitate",
+      "definition": "to put in danger, expose to risk"
+    },
+    {
+      "id": 26,
+      "term": "Zeigarnik Effect",
+      "definition": "an obsession with unfinished work or business; a tendency to focus on things left"
+    }
+  ]
+}

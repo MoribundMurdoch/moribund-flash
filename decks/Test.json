@@ -1,0 +1,22 @@
+{
+  "file_name": "Test",
+  "tags": "400",
+  "media_path": null,
+  "cards": [
+    {
+      "term": "Palmary",
+      "definition": "praiesworthy",
+      "hyperlink": ""
+    },
+    {
+      "term": "Martext",
+      "definition": "preacher who stumbles through sermons",
+      "hyperlink": ""
+    },
+    {
+      "term": "Gravid",
+      "definition": "pregnant",
+      "hyperlink": ""
+    }
+  ]
+}

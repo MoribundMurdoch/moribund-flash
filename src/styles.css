@@ -1,0 +1,258 @@
+/* --- FONTS --- */
+@font-face {
+  font-family: "Moribund Serif";
+  src: url("./assets/fonts/IMFellEnglish-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Public Pixel";
+  src: url("./assets/fonts/PublicPixel.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+/* --- BASE RESET --- */
+:root {
+  font-family: "Moribund Serif", Georgia, serif;
+  background: #000000;
+  color: #ffffff;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #app {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+/* --- GENERIC SCREEN LAYOUTS --- */
+.menu-screen, 
+.placeholder-screen, 
+.options-screen, 
+.deck-list-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #000000;
+}
+
+.menu-panel, 
+.placeholder-panel, 
+.options-panel, 
+.deck-list-panel {
+  width: min(900px, calc(100vw - 32px));
+  padding: 38px 42px;
+  background: #000000;
+  border: 1px solid #ffffff;
+}
+
+/* --- MAIN MENU STYLES --- */
+.brand-block {
+  margin-bottom: 48px;
+}
+
+.brand-block h1 {
+  font-size: 4.2rem;
+  margin: 0;
+  line-height: 1;
+}
+
+.menu-stage {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin: 0 auto;
+  max-width: 500px;
+}
+
+.menu-critter {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 48px;
+  height: 48px;
+  image-rendering: pixelated;
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+}
+
+.menu-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.menu-button {
+  position: relative;
+  width: 100%;
+  min-height: 68px;
+  padding: 11px 24px;
+  color: #ffffff;
+  border: 1px solid #ffffff;
+  background: #000000;
+  text-align: left;
+  transition: transform 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.menu-button:hover,
+.menu-button:focus,
+.menu-button.is-focused {
+  outline: none;
+  transform: translateX(8px);
+  border-color: #a912e6; /* Purple Ink */
+  color: #a912e6;
+}
+
+.button-eyebrow {
+  display: block;
+  margin-bottom: 3px;
+  font-family: "Public Pixel", monospace;
+  font-size: 0.52rem;
+  color: inherit;
+}
+
+.button-main {
+  display: block;
+  font-size: 1.52rem;
+}
+
+/* --- OPTIONS SCREEN STYLES --- */
+.options-header, .deck-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  border-bottom: 1px solid #ffffff;
+  padding-bottom: 16px;
+}
+
+.options-layout {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 40px;
+}
+
+.options-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-right: 1px solid #333333;
+}
+
+.sidebar-tab {
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid transparent;
+  padding: 12px 16px;
+  text-align: left;
+  font-family: "Public Pixel", monospace;
+  font-size: 0.65rem;
+}
+
+.sidebar-tab:hover, .sidebar-tab.is-active {
+  border-color: #a912e6;
+  color: #a912e6;
+}
+
+.settings-group {
+  border: 1px solid #333333;
+  padding: 24px;
+  margin-bottom: 32px;
+}
+
+.settings-group legend {
+  font-family: "Public Pixel", monospace;
+  font-size: 0.75rem;
+  padding: 0 8px;
+  color: #a912e6;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+/* --- DECK LIST GRID --- */
+.deck-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.deck-card {
+  background: transparent;
+  border: 1px solid #333;
+  color: #fff;
+  text-align: left;
+  padding: 20px;
+  transition: border-color 150ms ease;
+}
+
+.deck-card:hover, .deck-card:focus {
+  border-color: #a912e6;
+  outline: none;
+}
+
+.deck-format-tag {
+  font-family: "Public Pixel", monospace;
+  font-size: 0.5rem;
+  color: #a912e6;
+  border: 1px solid #a912e6;
+  padding: 2px 6px;
+  display: inline-block;
+  margin-bottom: 12px;
+}
+
+.deck-name {
+  font-size: 1.4rem;
+  margin: 0 0 8px 0;
+}
+
+.deck-meta {
+  font-size: 0.9rem;
+  color: #888;
+  margin: 0;
+}
+
+/* --- ERROR & LOADING STATES --- */
+.error-state {
+  grid-column: 1 / -1;
+  border: 1px solid #ff4444;
+  padding: 24px;
+  text-align: center;
+}
+
+.error-message {
+  color: #ff4444;
+  font-family: "Public Pixel", monospace;
+  font-size: 0.8rem;
+  margin-bottom: 16px;
+}
+
+.loading-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px;
+  font-style: italic;
+  color: #888;
+}

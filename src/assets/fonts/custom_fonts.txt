@@ -1,0 +1,2 @@
+assets/fonts/IMFellEnglish-Regular.ttf
+assets/fonts/DepartureMonoNerdFontMono-Regular.otf

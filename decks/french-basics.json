@@ -1,0 +1,8 @@
+{
+  "name": "French Basics",
+  "description": "Tiny French demo deck",
+  "cards": [
+    { "id": 1, "term": "bonjour", "definition": "hello" },
+    { "id": 2, "term": "merci", "definition": "thank you" }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "Animals (demo)",
+  "description": "Tiny demo deck for MorFlash core",
+  "cards": [
+    {
+      "id": 1,
+      "term": "cat",
+      "definition": "a small domestic animal"
+    },
+    {
+      "id": 2,
+      "term": "dog",
+      "definition": "a loyal domestic animal"
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+<!--?xml version="1.0" encoding="UTF-8"?-->
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="64" viewBox="0 0 320 64">
+
+  <!-- transparent background -->
+  <rect x="0" y="0" width="320" height="64" fill="none"></rect>
+
+  <defs>
+    <!-- soft outer glow -->
+    <linearGradient id="btnOuterGlow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#19c0ff" stop-opacity="0.60"></stop>
+      <stop offset="50%" stop-color="#19c0ff" stop-opacity="0.25"></stop>
+      <stop offset="100%" stop-color="#19c0ff" stop-opacity="0.00"></stop>
+    </linearGradient>
+
+    <!-- dark inner fill -->
+    <linearGradient id="btnInnerFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#050910"></stop>
+      <stop offset="40%" stop-color="#070d17"></stop>
+      <stop offset="60%" stop-color="#02050a"></stop>
+      <stop offset="100%" stop-color="#020308"></stop>
+    </linearGradient>
+  </defs>
+
+  <!-- OUTER GLOW HEX (perfectly symmetric) -->
+  <!-- points: 16,32 -> 40,10 -> 280,10 -> 304,32 -> 280,54 -> 40,54 -->
+  <path d="M 16 32
+         L 40 10
+         L 280 10
+         L 304 32
+         L 280 54
+         L 40 54
+         Z" fill="url(#btnOuterGlow)" opacity="0.4"></path>
+
+  <!-- CYAN OUTLINE HEX (offset inwards, same shape both sides) -->
+  <path d="M 20 32
+         L 42 12
+         L 278 12
+         L 300 32
+         L 278 52
+         L 42 52
+         Z" fill="none" stroke="#1fd4ff" stroke-width="2.4" stroke-linejoin="round"></path>
+
+  <!-- MAIN INNER PANEL (stretched area) -->
+  <!-- slightly smaller symmetric hex -->
+  <path d="M 30 32
+         L 52 16
+         L 268 16
+         L 290 32
+         L 268 48
+         L 52 48
+         Z" fill="url(#btnInnerFill)" stroke="#041625" stroke-width="1.4" stroke-linejoin="round"></path>
+
+  <!-- very subtle inner highlight, same hex again, inset -->
+  <path d="M 34 32
+         L 54 18
+         L 266 18
+         L 286 32
+         L 266 46
+         L 54 46
+         Z" fill="none" stroke="#34c9ff" stroke-opacity="0.35" stroke-width="1.0"></path>
+</svg>

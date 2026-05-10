@@ -1,0 +1,21 @@
+{
+  "file_name": "Rune Test ",
+  "tags": "Rune",
+  "media_path": "/home/deo-user/Pictures/Screenshots/Screenshot_20251204_030723.png",
+  "cards": [
+    {
+      "term": "Test ",
+      "definition": "Duded",
+      "term_lang": "en",
+      "def_lang": "en",
+      "hyperlink": "https://www.reddit.com/r/SideProject/comments/1pdo7eo/im_making_a_simple_brainstorming_app_where_each/",
+      "media_path": "/home/deo-user/Pictures/Screenshots/Screenshot_20251204_030723.png",
+      "tags": [
+        "Puppy"
+      ],
+      "examples": [
+        "Hello"
+      ]
+    }
+  ]
+}

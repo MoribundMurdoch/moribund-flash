@@ -1,0 +1,7 @@
+assets/sfx/fahhhhh.wav
+assets/sfx/Yes.wav
+assets/sfx/Yes-Correct.wav
+assets/sfx/Correct-Tone.ogg
+assets/sfx/woosh2.ogg
+assets/sfx/mars22.dsp.wav
+assets/sfx/yes-yes-yes-yes-yes.wav

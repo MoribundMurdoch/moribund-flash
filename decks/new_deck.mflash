@@ -1,0 +1,24 @@
+{
+  "format": "mflash",
+  "version": 1,
+  "title": "new_deck",
+  "description": null,
+  "snippet": null,
+  "default_term_lang": null,
+  "default_def_lang": null,
+  "deck_tags": [],
+  "cover_media": null,
+  "cards": [
+    {
+      "term": "",
+      "definition": "",
+      "term_lang": null,
+      "def_lang": null,
+      "hyperlink": null,
+      "media": null,
+      "tags": [],
+      "examples": [],
+      "notes": null
+    }
+  ]
+}

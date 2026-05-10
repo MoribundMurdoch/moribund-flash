@@ -1,0 +1,2 @@
+assets/backgrounds/blue_rock.png
+assets/backgrounds/Rectangular Cobble.png

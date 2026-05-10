@@ -1,0 +1,26 @@
+{
+  "format": "mflash",
+  "version": 1,
+  "title": "Rune Test",
+  "description": "Rune",
+  "snippet": null,
+  "default_term_lang": null,
+  "default_def_lang": null,
+  "deck_tags": [
+    "Rune"
+  ],
+  "cover_media": null,
+  "cards": [
+    {
+      "term": "Test ",
+      "definition": "Duded",
+      "term_lang": null,
+      "def_lang": null,
+      "hyperlink": null,
+      "media": null,
+      "tags": [],
+      "examples": [],
+      "notes": null
+    }
+  ]
+}
