@@ -113,7 +113,7 @@ fn save_deck(app: tauri::AppHandle, deck: Value) -> Result<Value, String> {
     fs::create_dir_all(&decks_dir).map_err(|error| error.to_string())?;
 
     let file_stem = deck_file_stem(&deck);
-    let path = decks_dir.join(format!("{file_stem}.mflash"));
+    let path = decks_dir.join(format!("{file_stem}.mflash.json"));
 
     let json = serde_json::to_string_pretty(&deck).map_err(|error| error.to_string())?;
     fs::write(&path, json).map_err(|error| error.to_string())?;
