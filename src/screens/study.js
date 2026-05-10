@@ -30,8 +30,12 @@ function runStudySession(app, goTo, studyDeck) {
     feedback: "",
     locked: false,
     panel: {
-      x: 0,
-      y: 0,
+      x: 32,
+      y: 32,
+    },
+    mediaPanel: {
+      x: 40,
+      y: 40,
     },
   };
 
@@ -166,11 +170,16 @@ function runStudySession(app, goTo, studyDeck) {
             ${escapeHtml(state.feedback)}
           </div>
         </section>
+
+        ${card.media ? renderMediaWindow(card.media, state.mediaPanel) : ""}
       </main>
     `;
 
     const studyPanel = app.querySelector(".study-panel--draggable");
     makeDraggable(studyPanel, ".study-drag-handle", state.panel);
+
+    const mediaPanel = app.querySelector(".study-media-window");
+    makeDraggable(mediaPanel, ".study-media-window__titlebar", state.mediaPanel);
 
     app.querySelector("#study-back").addEventListener("click", () => {
       playSound("ui_select");
@@ -208,6 +217,81 @@ function runStudySession(app, goTo, studyDeck) {
   render();
 }
 
+function renderMediaWindow(media, position) {
+  const path = media?.path || "";
+  const src = mediaSrc(path);
+  const type = media?.type || mediaTypeFromPath(path);
+
+  return `
+    <aside
+      class="study-media-window"
+      style="transform: translate(${position.x}px, ${position.y}px);"
+      aria-label="Card media"
+    >
+      <div class="study-media-window__titlebar">
+        <span>Media</span>
+        <span class="study-media-window__hint">drag</span>
+      </div>
+
+      <div class="study-media-window__body">
+        ${renderMediaElement(type, src, media?.alt || "Card media")}
+      </div>
+    </aside>
+  `;
+}
+
+function renderMediaElement(type, src, alt) {
+  if (!src) {
+    return `<p>No media source found.</p>`;
+  }
+
+  if (type === "image") {
+    return `
+      <img src="${escapeAttribute(src)}" alt="${escapeAttribute(alt)}" draggable="false">
+      <code>${escapeHtml(src)}</code>
+    `;
+  }
+
+  if (type === "video") {
+    return `<video src="${escapeAttribute(src)}" controls></video>`;
+  }
+
+  if (type === "audio") {
+    return `<audio src="${escapeAttribute(src)}" controls></audio>`;
+  }
+
+  return `
+    <p>Media file:</p>
+    <code>${escapeHtml(src)}</code>
+  `;
+}
+
+function mediaSrc(path) {
+  if (!path) return "";
+
+  if (/^(https?:|asset:|data:|blob:)/i.test(path)) {
+    return path;
+  }
+
+  try {
+    return window.__TAURI__?.core?.convertFileSrc
+      ? window.__TAURI__.core.convertFileSrc(path)
+      : path;
+  } catch {
+    return path;
+  }
+}
+
+function mediaTypeFromPath(path) {
+  const value = String(path || "").toLowerCase();
+
+  if (/\.(png|jpe?g|gif|webp|svg)$/i.test(value)) return "image";
+  if (/\.(mp4|webm|mov|m4v)$/i.test(value)) return "video";
+  if (/\.(ogg|mp3|wav)$/i.test(value)) return "audio";
+
+  return "file";
+}
+
 function makeDraggable(element, handleSelector, positionStore) {
   if (!element) return;
 
@@ -233,27 +317,27 @@ function makeDraggable(element, handleSelector, positionStore) {
     element.classList.add("is-dragging");
   });
 
-handle.addEventListener("pointermove", (event) => {
-  if (!dragging) return;
+  handle.addEventListener("pointermove", (event) => {
+    if (!dragging) return;
 
-  const rawX = originalX + event.clientX - startX;
-  const rawY = originalY + event.clientY - startY;
+    const rawX = originalX + event.clientX - startX;
+    const rawY = originalY + event.clientY - startY;
 
-  const parent = element.closest(".study-screen") || element.parentElement;
-  const boundsWidth = parent ? parent.clientWidth : window.innerWidth;
-  const boundsHeight = parent ? parent.clientHeight : window.innerHeight;
+    const canvas = element.closest(".study-screen");
+    const canvasWidth = canvas?.clientWidth || window.innerWidth;
+    const canvasHeight = canvas?.clientHeight || window.innerHeight;
 
-  const elementWidth = element.offsetWidth;
-  const elementHeight = element.offsetHeight;
+    const panelWidth = element.offsetWidth;
+    const panelHeight = element.offsetHeight;
 
-  const maxX = Math.max(0, boundsWidth - elementWidth);
-  const maxY = Math.max(0, boundsHeight - elementHeight);
+    const maxX = Math.max(0, canvasWidth - panelWidth);
+    const maxY = Math.max(0, canvasHeight - panelHeight);
 
-  positionStore.x = Math.min(Math.max(0, rawX), maxX);
-  positionStore.y = Math.min(Math.max(0, rawY), maxY);
+    positionStore.x = clamp(rawX, 0, maxX);
+    positionStore.y = clamp(rawY, 0, maxY);
 
-  element.style.transform = `translate(${positionStore.x}px, ${positionStore.y}px)`;
-});
+    element.style.transform = `translate(${positionStore.x}px, ${positionStore.y}px)`;
+  });
 
   handle.addEventListener("pointerup", (event) => {
     dragging = false;
@@ -494,6 +578,10 @@ function isStudyableCard(card) {
   return card.term.trim() || card.definition.trim();
 }
 
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
 function shuffle(items) {
   const copy = [...items];
 
@@ -519,4 +607,9 @@ function escapeHtml(value) {
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
+}
+
+
+function escapeAttribute(value) {
+  return escapeHtml(value).replaceAll("'", "&#039;");
 }

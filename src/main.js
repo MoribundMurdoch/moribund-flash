@@ -2,6 +2,7 @@ import { renderMainMenu } from "./screens/mainMenu.js";
 import { renderPlaceholder } from "./screens/placeholder.js";
 import { renderOptions } from "./screens/options/index.js";
 import { renderDeckList } from "./screens/deckList.js";
+import { renderStudy } from "./screens/study.js";
 import deckBuilderScreen from "./screens/deckBuilder.js";
 import { loadSound } from "./sound.js";
 
@@ -19,6 +20,7 @@ const screens = {
 
   deckList: renderDeckList,
   deckLibrary: renderDeckList,
+  study: renderStudy,
 
   studyDeck: (app, context) =>
     renderPlaceholder(app, context, {

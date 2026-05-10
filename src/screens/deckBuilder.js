@@ -1,6 +1,6 @@
 // src/screens/deckBuilder.js
 
-import { saveDeck } from "../api.js";
+import { importMediaFile, pickMediaFile, saveDeck } from "../api.js";
 
 const DRAFT_KEY = "moribundFlash.deckBuilderDraft.v2";
 
@@ -110,6 +110,121 @@ function splitLines(value) {
     .split("\n")
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function isSupportedMediaPath(path) {
+  return /\.(png|jpe?g|gif|webp|svg|mp4|webm|mov|m4v|ogg|mp3|wav)$/i.test(
+    String(path || "")
+  );
+}
+
+function mediaTypeFromPath(path) {
+  const value = String(path || "").toLowerCase();
+
+  if (/\.(png|jpe?g|gif|webp|svg)$/i.test(value)) return "image";
+  if (/\.(mp4|webm|mov|m4v)$/i.test(value)) return "video";
+  if (/\.(ogg|mp3|wav)$/i.test(value)) return "audio";
+
+  return "file";
+}
+
+function filePathFromFile(file) {
+  return (
+    file?.path ||
+    file?.webkitRelativePath ||
+    file?.name ||
+    ""
+  );
+}
+
+async function attachImportedMediaPath(sourcePath, target) {
+  try {
+    const imported = await importMediaFile(sourcePath);
+    const storedPath = imported?.stored_path || imported?.storedPath;
+
+    if (!storedPath) {
+      builderState.error = "Media import did not return a stored path.";
+      builderState.status = "";
+      saveDraft();
+      return;
+    }
+
+    if (target === "deck") {
+      builderState.mediaPath = storedPath;
+      builderState.status = `Imported deck media: ${imported.file_name || imported.fileName || storedPath}`;
+      builderState.error = "";
+      saveDraft();
+      return;
+    }
+
+    if (target === "card") {
+      const card = activeCard();
+      card.mediaPath = storedPath;
+      builderState.status = `Imported card media: ${imported.file_name || imported.fileName || storedPath}`;
+      builderState.error = "";
+      saveDraft();
+    }
+  } catch (error) {
+    builderState.error = error?.message || "Failed to import media.";
+    builderState.status = "";
+    saveDraft();
+  }
+}
+
+async function attachMediaFile(file, target) {
+  if (!file) {
+    builderState.error = "No media file was selected.";
+    builderState.status = "";
+    saveDraft();
+    return;
+  }
+
+  const path = filePathFromFile(file);
+
+  if (!path) {
+    builderState.error = "The selected file did not expose a usable path. Try the Browse button, which uses the native Tauri picker.";
+    builderState.status = "";
+    saveDraft();
+    return;
+  }
+
+  if (!isSupportedMediaPath(path)) {
+    builderState.error = `Unsupported media type: ${path}`;
+    builderState.status = "";
+    saveDraft();
+    return;
+  }
+
+  await attachImportedMediaPath(path, target);
+}
+
+async function browseAndImportMedia(target) {
+  try {
+    const sourcePath = await pickMediaFile();
+
+    if (!sourcePath) {
+      return;
+    }
+
+    await attachImportedMediaPath(sourcePath, target);
+  } catch (error) {
+    builderState.error = error?.message || "Failed to pick media.";
+    builderState.status = "";
+    saveDraft();
+  }
+}
+
+async function handleMediaDrop(event, target) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  const file = event.dataTransfer?.files?.[0];
+  await attachMediaFile(file, target);
+}
+
+function preventMediaDragDefault(event) {
+  event.preventDefault();
+  event.stopPropagation();
 }
 
 function deckName() {
@@ -244,7 +359,7 @@ function mediaFromPath(path) {
   if (!trimmed) return null;
 
   return {
-    type: "file",
+    type: mediaTypeFromPath(trimmed),
     path: trimmed,
     alt: "",
   };
@@ -392,14 +507,30 @@ function renderMetadata() {
           >
         </label>
 
-        <label class="builder-field">
-          <span>Cover / Media <small>(image / GIF / video)</small></span>
+        <label class="builder-field builder-media-dropzone" data-media-drop="deck">
+          <span>Cover / Media <small>(drop image / GIF / video / audio, browse, or paste path)</small></span>
+
+          <div class="builder-media-dropzone__row">
+            <input
+              type="text"
+              value="${escapeHtml(builderState.mediaPath)}"
+              placeholder="drop media here, browse, or paste local path"
+              data-deck-field="mediaPath"
+            >
+
+            <button type="button" class="builder-button" data-action="browse-deck-media">
+              Browse...
+            </button>
+          </div>
+
           <input
-            type="text"
-            value="${escapeHtml(builderState.mediaPath)}"
-            placeholder="optional local media path"
-            data-deck-field="mediaPath"
+            class="builder-media-picker"
+            type="file"
+            accept="image/*,video/*,audio/*,.gif,.webp,.svg"
+            data-media-picker="deck"
           >
+
+          <small class="builder-media-dropzone__hint">Drop media here or click Browse to attach it to the whole deck.</small>
         </label>
       </div>
     </section>
@@ -469,14 +600,30 @@ function renderActiveCardEditor() {
         </section>
 
         <section class="builder-panel builder-zone builder-zone--media">
-          <label class="builder-field">
-            <span>Media <small>(image / GIF / video)</small></span>
+          <label class="builder-field builder-media-dropzone" data-media-drop="card">
+            <span>Media <small>(drop image / GIF / video / audio, browse, or paste path)</small></span>
+
+            <div class="builder-media-dropzone__row">
+              <input
+                type="text"
+                value="${escapeHtml(card.mediaPath)}"
+                placeholder="drop media here, browse, or paste local path"
+                data-card-field="mediaPath"
+              >
+
+              <button type="button" class="builder-button" data-action="browse-card-media">
+                Browse...
+              </button>
+            </div>
+
             <input
-              type="text"
-              value="${escapeHtml(card.mediaPath)}"
-              placeholder="optional local media path"
-              data-card-field="mediaPath"
+              class="builder-media-picker"
+              type="file"
+              accept="image/*,video/*,audio/*,.gif,.webp,.svg"
+              data-media-picker="card"
             >
+
+            <small class="builder-media-dropzone__hint">Drop media here or click Browse to attach it to this card.</small>
           </label>
 
           <label class="builder-field">
@@ -586,6 +733,31 @@ function render(app, goTo) {
     }
   });
 
+  app.querySelectorAll("[data-media-drop]").forEach((zone) => {
+    zone.addEventListener("dragover", (event) => {
+      preventMediaDragDefault(event);
+      zone.classList.add("is-drag-over");
+    });
+
+    zone.addEventListener("dragleave", () => {
+      zone.classList.remove("is-drag-over");
+    });
+
+    zone.addEventListener("drop", async (event) => {
+      zone.classList.remove("is-drag-over");
+      await handleMediaDrop(event, zone.dataset.mediaDrop);
+      render(app, goTo);
+    });
+  });
+
+  app.querySelectorAll("[data-media-picker]").forEach((picker) => {
+    picker.addEventListener("change", async (event) => {
+      const file = event.target.files?.[0];
+      await attachMediaFile(file, picker.dataset.mediaPicker);
+      render(app, goTo);
+    });
+  });
+
   app.addEventListener("click", async (event) => {
     const button = event.target.closest("[data-action]");
     if (!button) return;
@@ -625,6 +797,18 @@ function render(app, goTo) {
 
     if (action === "next-card") {
       goNextCard();
+      render(app, goTo);
+      return;
+    }
+
+    if (action === "browse-deck-media") {
+      await browseAndImportMedia("deck");
+      render(app, goTo);
+      return;
+    }
+
+    if (action === "browse-card-media") {
+      await browseAndImportMedia("card");
       render(app, goTo);
       return;
     }

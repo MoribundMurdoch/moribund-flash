@@ -20,6 +20,8 @@ const COMMANDS = Object.freeze({
   EXPORT_DECK: "export_deck",
   DELETE_DECK: "delete_deck",
   GET_APP_DATA_DIR: "get_app_data_dir",
+  PICK_MEDIA_FILE: "pick_media_file",
+  IMPORT_MEDIA_FILE: "import_media_file",
 });
 
 /**
@@ -200,6 +202,26 @@ export async function deleteDeck({ id = null, path = null } = {}) {
 }
 
 /**
+ * Opens a native media picker and returns the selected source path.
+ */
+export async function pickMediaFile() {
+  return await invokeCommand(COMMANDS.PICK_MEDIA_FILE);
+}
+
+/**
+ * Copies a media file into the app data media folder.
+ */
+export async function importMediaFile(sourcePath) {
+  if (!isNonEmptyString(sourcePath)) {
+    throw new Error("[importMediaFile] Expected a non-empty source path.");
+  }
+
+  return await invokeCommand(COMMANDS.IMPORT_MEDIA_FILE, {
+    sourcePath,
+  });
+}
+
+/**
  * Optional helper for debugging paths.
  */
 export async function getAppDataDir() {
@@ -296,6 +318,30 @@ function normalizeCard(raw, index) {
     };
   }
 
+  const metadata = isPlainObject(raw.metadata) ? { ...raw.metadata } : {};
+
+  if (isPlainObject(raw.media)) {
+    metadata.media = raw.media;
+  }
+
+  if (Array.isArray(raw.example_sentences)) {
+    metadata.examples = raw.example_sentences.filter(
+      (example) => typeof example === "string"
+    );
+  }
+
+  if (typeof raw.hyperlink === "string" && raw.hyperlink.trim()) {
+    metadata.hyperlink = raw.hyperlink.trim();
+  }
+
+  if (typeof raw.term_language === "string") {
+    metadata.termLang = raw.term_language;
+  }
+
+  if (typeof raw.definition_language === "string") {
+    metadata.defLang = raw.definition_language;
+  }
+
   return {
     id: stringOrFallback(raw.id, `card-${index}`),
 
@@ -316,7 +362,7 @@ function normalizeCard(raw, index) {
       ? raw.tags.filter((tag) => typeof tag === "string")
       : [],
 
-    metadata: isPlainObject(raw.metadata) ? raw.metadata : {},
+    metadata,
   };
 }
 

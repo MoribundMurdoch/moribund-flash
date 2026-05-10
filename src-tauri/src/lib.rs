@@ -14,9 +14,97 @@ struct DeckSummary {
     modified_at: Option<String>,
 }
 
+#[derive(Serialize)]
+struct MediaImportResult {
+    original_path: String,
+    stored_path: String,
+    file_name: String,
+    media_type: String,
+}
+
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {name}! You've been greeted from Rust!")
+}
+
+#[tauri::command]
+fn pick_media_file() -> Result<Option<String>, String> {
+    let file = rfd::FileDialog::new()
+        .add_filter(
+            "Media",
+            &[
+                "png", "jpg", "jpeg", "gif", "webp", "svg", "mp4", "webm", "mov", "m4v", "ogg",
+                "mp3", "wav",
+            ],
+        )
+        .pick_file();
+
+    Ok(file.map(|path| path.to_string_lossy().to_string()))
+}
+
+#[tauri::command]
+fn import_media_file(
+    app: tauri::AppHandle,
+    source_path: String,
+) -> Result<MediaImportResult, String> {
+    let source_path = normalize_source_path(&source_path);
+    let source = PathBuf::from(&source_path);
+
+    if !source.exists() {
+        return Err(format!("Media file does not exist: {}", source.display()));
+    }
+
+    if !source.is_file() {
+        return Err(format!("Media path is not a file: {}", source.display()));
+    }
+
+    if !is_supported_media_file(&source) {
+        return Err(format!("Unsupported media file type: {}", source.display()));
+    }
+
+    let media_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|error| error.to_string())?
+        .join("media");
+
+    fs::create_dir_all(&media_dir).map_err(|error| error.to_string())?;
+
+    let file_stem = source
+        .file_stem()
+        .and_then(|value| value.to_str())
+        .map(sanitize_file_stem)
+        .filter(|value| !value.is_empty())
+        .unwrap_or_else(|| "media".to_string());
+
+    let extension = source
+        .extension()
+        .and_then(|value| value.to_str())
+        .map(|value| value.to_lowercase())
+        .unwrap_or_else(|| "bin".to_string());
+
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|error| error.to_string())?
+        .as_millis();
+
+    let file_name = format!("{file_stem}-{timestamp}.{extension}");
+    let destination = media_dir.join(&file_name);
+
+    fs::copy(&source, &destination).map_err(|error| {
+        format!(
+            "Failed to copy {} to {}: {error}",
+            source.display(),
+            destination.display()
+        )
+    })?;
+
+    Ok(MediaImportResult {
+        original_path: source.to_string_lossy().to_string(),
+        stored_path: destination.to_string_lossy().to_string(),
+        file_name,
+        media_type: media_type_from_extension(&extension).to_string(),
+    })
 }
 
 #[tauri::command]
@@ -40,6 +128,39 @@ fn save_deck(app: tauri::AppHandle, deck: Value) -> Result<Value, String> {
     }
 
     Ok(saved_deck)
+}
+
+#[tauri::command]
+fn load_deck(
+    app: tauri::AppHandle,
+    id: Option<String>,
+    path: Option<String>,
+) -> Result<Value, String> {
+    let deck_path = match path {
+        Some(path) if !path.trim().is_empty() => PathBuf::from(path),
+        _ => {
+            let id = id
+                .filter(|value| !value.trim().is_empty())
+                .ok_or_else(|| "Expected either id or path.".to_string())?;
+
+            decks_dir(&app)?.join(format!("{}.mflash", sanitize_file_stem(&id)))
+        }
+    };
+
+    let raw = fs::read_to_string(&deck_path)
+        .map_err(|error| format!("Failed to read {}: {error}", deck_path.to_string_lossy()))?;
+
+    let mut deck: Value = serde_json::from_str(&raw)
+        .map_err(|error| format!("Failed to parse {}: {error}", deck_path.to_string_lossy()))?;
+
+    if let Some(object) = deck.as_object_mut() {
+        object.insert(
+            "path".to_string(),
+            Value::String(deck_path.to_string_lossy().to_string()),
+        );
+    }
+
+    Ok(deck)
 }
 
 #[tauri::command]
@@ -71,6 +192,49 @@ fn list_decks(app: tauri::AppHandle) -> Result<Vec<DeckSummary>, String> {
     decks.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
 
     Ok(decks)
+}
+
+fn normalize_source_path(path: &str) -> String {
+    let trimmed = path.trim();
+
+    if let Some(stripped) = trimmed.strip_prefix("file://") {
+        stripped.replace("%20", " ")
+    } else {
+        trimmed.to_string()
+    }
+}
+
+fn is_supported_media_file(path: &Path) -> bool {
+    path.extension()
+        .and_then(|value| value.to_str())
+        .map(|extension| {
+            matches!(
+                extension.to_lowercase().as_str(),
+                "png"
+                    | "jpg"
+                    | "jpeg"
+                    | "gif"
+                    | "webp"
+                    | "svg"
+                    | "mp4"
+                    | "webm"
+                    | "mov"
+                    | "m4v"
+                    | "ogg"
+                    | "mp3"
+                    | "wav"
+            )
+        })
+        .unwrap_or(false)
+}
+
+fn media_type_from_extension(extension: &str) -> &'static str {
+    match extension.to_lowercase().as_str() {
+        "png" | "jpg" | "jpeg" | "gif" | "webp" | "svg" => "image",
+        "mp4" | "webm" | "mov" | "m4v" => "video",
+        "ogg" | "mp3" | "wav" => "audio",
+        _ => "file",
+    }
 }
 
 fn decks_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
@@ -169,7 +333,14 @@ fn deck_summary_from_value(deck: &Value, path: &Path) -> Result<DeckSummary, Str
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, save_deck, list_decks])
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            save_deck,
+            list_decks,
+            load_deck,
+            pick_media_file,
+            import_media_file
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

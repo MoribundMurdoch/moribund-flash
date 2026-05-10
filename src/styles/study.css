@@ -1,9 +1,12 @@
 /* src/styles/study.css */
 
 .study-screen {
-  min-height: 100vh;
-  position: relative;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
   overflow: hidden;
+  box-sizing: border-box;
   background:
     var(--study-background-image, none),
     var(--study-background, #000);
@@ -13,14 +16,17 @@
 
 .study-panel {
   width: min(920px, calc(100vw - 48px));
-  margin: 6vh auto;
   padding: 28px;
   border: 1px solid var(--border-color, #fff);
   background: rgba(0, 0, 0, 0.78);
+  box-sizing: border-box;
 }
 
 .study-panel--draggable {
-  position: relative;
+  position: absolute;
+  left: 0;
+  top: 0;
+  margin: 0;
   will-change: transform;
 }
 
@@ -30,6 +36,7 @@
 
 .study-drag-handle {
   cursor: grab;
+  touch-action: none;
 }
 
 .study-drag-handle:active {
@@ -167,6 +174,65 @@
 
   .study-panel {
     width: calc(100vw - 32px);
-    margin: 24px auto;
   }
+}
+
+/* Spawned media window */
+
+.study-media-window {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: min(360px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  border: 1px solid currentColor;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 30;
+  overflow: hidden;
+}
+
+.study-media-window.is-dragging {
+  opacity: 0.95;
+}
+
+.study-media-window__titlebar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid currentColor;
+  cursor: grab;
+  user-select: none;
+}
+
+.study-media-window__titlebar:active {
+  cursor: grabbing;
+}
+
+.study-media-window__hint {
+  opacity: 0.65;
+  font-size: 0.85rem;
+}
+
+.study-media-window__body {
+  padding: 12px;
+  overflow: auto;
+  max-height: calc(100vh - 90px);
+}
+
+.study-media-window img,
+.study-media-window video {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.study-media-window audio {
+  width: 100%;
+}
+
+.study-media-window code {
+  display: block;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
