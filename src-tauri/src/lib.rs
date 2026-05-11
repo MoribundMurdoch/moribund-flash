@@ -143,7 +143,15 @@ fn load_deck(
                 .filter(|value| !value.trim().is_empty())
                 .ok_or_else(|| "Expected either id or path.".to_string())?;
 
-            decks_dir(&app)?.join(format!("{}.mflash", sanitize_file_stem(&id)))
+            let base_stem = sanitize_file_stem(&id);
+            let dir = decks_dir(&app)?;
+
+            let primary_path = dir.join(format!("{}.mflash.json", base_stem));
+            if primary_path.exists() {
+                primary_path
+            } else {
+                dir.join(format!("{}.mflash", base_stem))
+            }
         }
     };
 
@@ -178,7 +186,13 @@ fn list_decks(app: tauri::AppHandle) -> Result<Vec<DeckSummary>, String> {
         let entry = entry.map_err(|error| error.to_string())?;
         let path = entry.path();
 
-        if path.extension().and_then(|ext| ext.to_str()) != Some("mflash") {
+        if !path.is_file() {
+            continue;
+        }
+
+        let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+
+        if !file_name.ends_with(".mflash.json") && !file_name.ends_with(".mflash") {
             continue;
         }
 
