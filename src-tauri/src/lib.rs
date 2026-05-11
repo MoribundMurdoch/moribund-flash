@@ -1,7 +1,8 @@
 use serde::Serialize;
 use serde_json::Value;
+use std::collections::HashSet;
 use std::fs;
-use std::io::Read;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use tauri::Manager;
 
@@ -283,6 +284,106 @@ fn import_packaged_deck(app: tauri::AppHandle, archive_path: String) -> Result<V
     Ok(deck)
 }
 
+#[tauri::command]
+fn export_packaged_deck(
+    app: tauri::AppHandle,
+    deck_id: String,
+    export_path: String,
+) -> Result<String, String> {
+    // 1. Load the requested deck
+    let deck = load_deck(app.clone(), Some(deck_id), None)?;
+    let json_string = serde_json::to_string_pretty(&deck)
+        .map_err(|error| format!("Failed to serialize deck: {error}"))?;
+
+    // 2. Prepare the destination ZIP file
+    let export_path_buf = PathBuf::from(normalize_source_path(&export_path));
+    let file = fs::File::create(&export_path_buf)
+        .map_err(|error| format!("Failed to create export file: {error}"))?;
+
+    let mut zip = zip::ZipWriter::new(file);
+    let options = zip::write::SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated);
+
+    // 3. Write deck.json to the root of the archive
+    zip.start_file("deck.json", options)
+        .map_err(|error| format!("Failed to start deck.json in archive: {error}"))?;
+    zip.write_all(json_string.as_bytes())
+        .map_err(|error| format!("Failed to write deck.json data: {error}"))?;
+
+    // 4. Scan JSON for media references and copy only those files
+    let media_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|error| error.to_string())?
+        .join("media");
+
+    let mut media_refs = HashSet::new();
+    extract_media_recursive(&deck, &mut media_refs);
+
+    for media_filename in media_refs {
+        let source_path = media_dir.join(&media_filename);
+
+        if source_path.exists() && source_path.is_file() {
+            zip.start_file(format!("media/{}", media_filename), options)
+                .map_err(|error| format!("Failed to start media file in archive: {error}"))?;
+
+            let mut source_file = fs::File::open(&source_path)
+                .map_err(|error| format!("Failed to open local media file: {error}"))?;
+
+            let mut buffer = Vec::new();
+            source_file
+                .read_to_end(&mut buffer)
+                .map_err(|error| format!("Failed to read local media file: {error}"))?;
+
+            zip.write_all(&buffer)
+                .map_err(|error| format!("Failed to write media to archive: {error}"))?;
+        }
+    }
+
+    zip.finish()
+        .map_err(|error| format!("Failed to finalize ZIP archive: {error}"))?;
+
+    Ok(export_path_buf.to_string_lossy().to_string())
+}
+
+// Recursively walks the JSON tree to find anything that looks like a media file
+fn extract_media_recursive(value: &Value, refs: &mut HashSet<String>) {
+    match value {
+        Value::String(s) => {
+            let lower = s.to_lowercase();
+            if lower.ends_with(".png")
+                || lower.ends_with(".jpg")
+                || lower.ends_with(".jpeg")
+                || lower.ends_with(".gif")
+                || lower.ends_with(".webp")
+                || lower.ends_with(".svg")
+                || lower.ends_with(".mp4")
+                || lower.ends_with(".webm")
+                || lower.ends_with(".mov")
+                || lower.ends_with(".ogg")
+                || lower.ends_with(".mp3")
+                || lower.ends_with(".wav")
+            {
+                // If it is stored as a path (e.g., "media/audio.mp3"), strip it down to just the filename
+                if let Some(file_name) = Path::new(s).file_name().and_then(|n| n.to_str()) {
+                    refs.insert(file_name.to_string());
+                }
+            }
+        }
+        Value::Array(arr) => {
+            for item in arr {
+                extract_media_recursive(item, refs);
+            }
+        }
+        Value::Object(obj) => {
+            for (_, val) in obj.iter() {
+                extract_media_recursive(val, refs);
+            }
+        }
+        _ => {}
+    }
+}
+
 fn normalize_source_path(path: &str) -> String {
     let trimmed = path.trim();
 
@@ -429,7 +530,8 @@ pub fn run() {
             load_deck,
             pick_media_file,
             import_media_file,
-            import_packaged_deck
+            import_packaged_deck,
+            export_packaged_deck
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
