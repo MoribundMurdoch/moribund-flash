@@ -1,6 +1,7 @@
 use serde::Serialize;
 use serde_json::Value;
 use std::fs;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use tauri::Manager;
 
@@ -208,6 +209,80 @@ fn list_decks(app: tauri::AppHandle) -> Result<Vec<DeckSummary>, String> {
     Ok(decks)
 }
 
+#[tauri::command]
+fn import_packaged_deck(app: tauri::AppHandle, archive_path: String) -> Result<Value, String> {
+    let archive_path = normalize_source_path(&archive_path);
+    let archive_file = fs::File::open(&archive_path)
+        .map_err(|error| format!("Failed to open archive: {error}"))?;
+
+    let mut archive = zip::ZipArchive::new(archive_file)
+        .map_err(|error| format!("Failed to read ZIP format: {error}"))?;
+
+    // 1. Verify and extract the raw JSON first. Do not write to disk yet.
+    let mut deck_json_string = String::new();
+    {
+        let mut deck_file = archive
+            .by_name("deck.json")
+            .map_err(|_| "Invalid archive: missing deck.json at root".to_string())?;
+        deck_file
+            .read_to_string(&mut deck_json_string)
+            .map_err(|error| format!("Failed to read deck.json: {error}"))?;
+    }
+
+    // 2. Parse to ensure it is valid JSON before we extract media
+    let mut deck: Value = serde_json::from_str(&deck_json_string)
+        .map_err(|error| format!("Invalid deck.json format: {error}"))?;
+
+    // 3. Prepare destination directory for media
+    let media_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|error| error.to_string())?
+        .join("media");
+    fs::create_dir_all(&media_dir).map_err(|error| error.to_string())?;
+
+    // 4. Safely extract media files
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i).map_err(|error| error.to_string())?;
+
+        // enclosed_name() prevents Zip Slip (directory traversal attacks)
+        let outpath = match file.enclosed_name() {
+            Some(path) => path,
+            None => continue,
+        };
+
+        // Only care about files explicitly inside the media/ folder
+        if outpath.starts_with("media/") && file.is_file() {
+            if let Some(file_name) = outpath.file_name() {
+                let dest_path = media_dir.join(file_name);
+                let mut outfile = fs::File::create(&dest_path)
+                    .map_err(|error| format!("Failed to create media file: {error}"))?;
+                std::io::copy(&mut file, &mut outfile)
+                    .map_err(|error| format!("Failed to write media file: {error}"))?;
+            }
+        }
+    }
+
+    // 5. Save the deck using the new raw JSON format
+    let decks_dir = decks_dir(&app)?;
+    fs::create_dir_all(&decks_dir).map_err(|error| error.to_string())?;
+
+    let file_stem = deck_file_stem(&deck);
+    let dest_path = decks_dir.join(format!("{file_stem}.mflash.json"));
+
+    fs::write(&dest_path, &deck_json_string)
+        .map_err(|error| format!("Failed to save extracted deck: {error}"))?;
+
+    if let Some(object) = deck.as_object_mut() {
+        object.insert(
+            "path".to_string(),
+            Value::String(dest_path.to_string_lossy().to_string()),
+        );
+    }
+
+    Ok(deck)
+}
+
 fn normalize_source_path(path: &str) -> String {
     let trimmed = path.trim();
 
@@ -353,7 +428,8 @@ pub fn run() {
             list_decks,
             load_deck,
             pick_media_file,
-            import_media_file
+            import_media_file,
+            import_packaged_deck
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
